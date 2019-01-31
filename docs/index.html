@@ -1,0 +1,172 @@
+<!doctype html>
+<!--
+Copyright 2019 Yu Tomida. All Rights Reserved.
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="GAIT">
+    <meta name="viewport" content="width=800, maximum-scale=1.0, user-scalable=yes">
+    <title>GAIT</title>
+    <link href="https://fonts.googleapis.com/css?family=Lato:100,300,400,700,900" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="bluejelly.js"></script>
+  </head>
+
+<body>
+<div class="container">
+    <div class="title margin">
+        <p id="title">IMU Communicator</p>
+    </div>
+
+    <div class="contents margin">
+        <button id="startNotifications" class="button">Connect</button>
+        <button id="reset" class="button">Reset</button>
+        <hr>
+        <div id="device_name"> </div>
+        <div id="uuid_name"> </div>
+        <div id="data_text"> </div>
+        <div id="status"> </div>
+        <button id="start" class="button">Start</button>
+        <button id="calc" class="button">Calc</button>
+        <button id="download imu" class="button">Download IMU</button>
+
+    </div>
+    <div class="footer margin">
+      For more information, see <a href="https://github.com/tomida/gait_communicate" target="_blank">GitHub</a>!
+    </div>
+</div>
+<script>
+//--------------------------------------------------
+//global variable
+//--------------------------------------------------
+//generate an instance
+var ble = new BlueJelly();
+
+
+//--------------------------------------------------
+//after loading
+//--------------------------------------------------
+window.onload = function () {
+  //initial messages
+  document.getElementById('device_name').innerHTML  = "No Device";
+  document.getElementById('uuid_name').innerHTML    = "Not Connected";
+  document.getElementById('status').innerHTML       = "ready";
+
+  //UUID settings
+  ble.setUUID("UUID1", "d68c0001-a21b-11e5-8cb8-0002a5d5c51b", "d68c0002-a21b-11e5-8cb8-0002a5d5c51b");  // Service and Indicate
+  ble.setUUID("UUID2", "d68c0001-a21b-11e5-8cb8-0002a5d5c51b", "d68c0003-a21b-11e5-8cb8-0002a5d5c51b");  // Service and Write
+}
+
+
+//--------------------------------------------------
+//after scanning
+//--------------------------------------------------
+ble.onScan = function (deviceName) {
+  console.log('> Bluetooth Device found!');
+
+  document.getElementById('device_name').innerHTML = deviceName;
+  document.getElementById('status').innerHTML = "found device!";
+}
+
+
+//--------------------------------------------------
+//ConnectGATT後の処理
+//--------------------------------------------------
+ble.onConnectGATT = function (uuid) {
+  console.log('> connected GATT!');
+
+  document.getElementById('uuid_name').innerHTML = uuid;
+  document.getElementById('status').innerHTML = "connected GATT!";
+}
+
+
+//--------------------------------------------------
+//when disconnected
+//--------------------------------------------------
+ble.onDisconnect = function() {
+  document.getElementById('uuid_name').innerHTML = "Not Connected";
+  document.getElementById('status').innerHTML = "disconnected";
+}
+
+
+//--------------------------------------------------
+//when cleared
+//--------------------------------------------------
+ble.onClear = function() {
+  document.getElementById('device_name').innerHTML = "No Device";
+  document.getElementById('status').innerHTML = "cleared";
+}
+
+
+//--------------------------------------------------
+//Reset後の処理
+//--------------------------------------------------
+ble.onReset = function() {
+  document.getElementById('device_name').innerHTML = "No Device";
+  document.getElementById('uuid_name').innerHTML = "Not Connected";
+  document.getElementById('status').innerHTML = "cleared";
+}
+
+//--------------------------------------------------
+//after error
+//--------------------------------------------------
+ble.onError = function(error){
+  document.getElementById('status').innerHTML = "ERROR : " + error;
+}
+
+//--------------------------------------------------
+//after write
+//--------------------------------------------------
+ble.onWrite = function(uuid){
+  document.getElementById('uuid_name').innerHTML = uuid;
+  document.getElementById('status').innerHTML = "written data"
+}
+
+//--------------------------------------------------
+//after reading
+//--------------------------------------------------
+ble.onRead = function (data, uuid){
+  //decode data from a device
+  value = (new TextDecoder('utf-8')).decode(data)
+  //display the value in console
+  console.log(value);
+
+  //display the value in html
+  document.getElementById('data_text').innerHTML = value;
+  document.getElementById('uuid_name').innerHTML = uuid;
+  document.getElementById('status').innerHTML = "read data"
+}
+
+
+//-------------------------------------------------
+//Event listener when buttons are clicked
+//--------------------------------------------------
+
+document.getElementById('startNotifications').addEventListener('click', function() {
+      ble.startNotify('UUID1');
+});
+
+document.getElementById('reset').addEventListener('click', function() {
+    ble.reset(); //reset is disconnect & clear
+});
+//start
+document.getElementById('start').addEventListener('click', function() {
+    data = new TextEncoder("utf-8").encode('start\n');
+    ble.write('UUID2', data);
+});
+// calc
+document.getElementById('calc').addEventListener('click', function() {
+    data = new TextEncoder("utf-8").encode('calc\n');
+    ble.write('UUID2', data);
+});
+// download
+document.getElementById('download imu').addEventListener('click', function() {
+    data = new TextEncoder("utf-8").encode('download imu\n');
+    ble.write('UUID2', data);
+});
+
+</script>
+</body>
+</html>

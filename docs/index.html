@@ -17,20 +17,35 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
 <body>
 <div class="container">
     <div class="title margin">
-        <p id="title">IMU Communicator</p>
+        <p id="title">IMU Controller</p>
     </div>
 
     <div class="contents margin">
         <button id="startNotifications" class="button">Connect</button>
         <button id="reset" class="button">Reset</button>
+        <button id="start" class="button">Start</button>
+        <button id="calc" class="button">Calc</button>
         <hr>
         <div id="device_name"> </div>
         <div id="uuid_name"> </div>
         <div id="data_text"> </div>
         <div id="status"> </div>
-        <button id="start" class="button">Start</button>
-        <button id="calc" class="button">Calc</button>
-        <button id="download imu" class="button">Download IMU</button>
+        <select id="parameter">
+          <option value="size">size</option>
+          <option value="acc_th">acc_th</option>
+          <option value="init_period">init_period</option>
+        </select>
+        <button id="get param" class="button">Get</button>
+        <br>
+        <select id="download option">
+          <option value="imu">IMU</option>
+          <option value="gyr">Gyro</option>
+          <option value="filt">Filtered</option>
+          <option value="pos">Position</option>
+          <option value="quat">Quaternion</option>
+          <option value="euler">Euler</option>
+        </select>
+        <button id="download" class="button">Download</button>
 
     </div>
     <div class="footer margin">
@@ -72,7 +87,7 @@ ble.onScan = function (deviceName) {
 
 
 //--------------------------------------------------
-//ConnectGATT後の処理
+//after connectGATT
 //--------------------------------------------------
 ble.onConnectGATT = function (uuid) {
   console.log('> connected GATT!');
@@ -101,7 +116,7 @@ ble.onClear = function() {
 
 
 //--------------------------------------------------
-//Reset後の処理
+//after reset
 //--------------------------------------------------
 ble.onReset = function() {
   document.getElementById('device_name').innerHTML = "No Device";
@@ -134,7 +149,9 @@ ble.onRead = function (data, uuid){
   console.log(value);
 
   //display the value in html
-  document.getElementById('data_text').innerHTML = value;
+  if(value != "OK\n"){
+    document.getElementById('data_text').innerHTML = value;
+  }
   document.getElementById('uuid_name').innerHTML = uuid;
   document.getElementById('status').innerHTML = "read data"
 }
@@ -162,10 +179,21 @@ document.getElementById('calc').addEventListener('click', function() {
     ble.write('UUID2', data);
 });
 // download
-document.getElementById('download imu').addEventListener('click', function() {
-    data = new TextEncoder("utf-8").encode('download imu\n');
+document.getElementById('get param').addEventListener('click', function() {
+    option = document.getElementById('parameter').value;
+    console.log(`get ${option}\n`)
+    data = new TextEncoder("utf-8").encode(`get ${option}\n`);
     ble.write('UUID2', data);
 });
+
+// download
+document.getElementById('download').addEventListener('click', function() {
+    option = document.getElementById('download option').value;
+    console.log(`download ${option}\n`)
+    data = new TextEncoder("utf-8").encode(`download ${option}\n`);
+    ble.write('UUID2', data);
+});
+
 
 </script>
 </body>

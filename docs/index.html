@@ -149,13 +149,20 @@ ble.onRead = function (data, uuid){
   //display the value in console
   console.log(decoded_data);
   read_data += decoded_data
-  if(read_data.match("OK") && read_data.match(":") ){
-// todo 　file download
-    read_data=''
+  // if(read_data.match("OK") && ((read_data.match(":")||[]).length > 2)){
+  if(read_data.match("OK") && read_data.match(":")){
+    const blob = new Blob([read_data], {type: "text/plain"}); // binary data
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.target = '_blank';
+    a.download = `${document.getElementById('download option').value}_output.txt`;
+    a.click();
+    read_data = '';
+    URL.revokeObjectURL(a.href); // オブジェクトURLを開放
   }
   else if(read_data.match("OK") || read_data.match("ERROR")){  //display the value in html
     document.getElementById('data_text').innerHTML = read_data.replace("OK", "");
-    read_data=''
+    read_data = '';
   }
   document.getElementById('uuid_name').innerHTML = uuid;
   document.getElementById('status').innerHTML = "read data"
@@ -171,10 +178,12 @@ document.getElementById('getUUID').addEventListener('click', function(){
 
 document.getElementById('startNotifications').addEventListener('click', function() {
     ble.startNotify('[INDICATE]');
+    read_data=''
 });
 
 document.getElementById('reset').addEventListener('click', function() {
     ble.reset(); //reset is disconnect & clear
+    read_data=''
 });
 //start
 document.getElementById('start').addEventListener('click', function() {

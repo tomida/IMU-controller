@@ -14,6 +14,7 @@ This software is released under the MIT License.
 Web Bluetooth API
 https://webbluetoothcg.github.io/web-bluetooth/
 */
+/* modified by Yu Tomida 2019　*/
 
 //--------------------------------------------------
 //BlueJelly constructor
@@ -37,6 +38,62 @@ var BlueJelly = function(){
   this.onError = function(error){console.log("onError");};
 }
 
+/* Utils */
+
+function getSupportedProperties(characteristic) {
+  let supportedProperties = [];
+  for (const p in characteristic.properties) {
+    if (characteristic.properties[p] === true) {
+      supportedProperties.push(p.toUpperCase());
+    }
+  }
+  return '[' + supportedProperties.join(', ') + ']';
+}
+
+//--------------------------------------------------
+//getUUID
+//--------------------------------------------------
+BlueJelly.prototype.getUUID = function(){
+  console.log('Execute : getUUID');
+  console.log(this.hashUUID);
+  let optionalServices = 'generic_access'
+    .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
+    .filter(s => s && BluetoothUUID.getService);
+
+  console.log('Requesting any Bluetooth Device...');
+  navigator.bluetooth.requestDevice({
+   // filters: [...] <- Prefer filters to save energy & show relevant devices.
+      acceptAllDevices: true,
+      optionalServices: optionalServices})
+  .then(device => {
+    console.log('Connecting to GATT Server...');
+    return device.gatt.connect();
+  })
+  .then(server => {
+    // Note that we could also get all services that match a specific UUID by
+    // passing it to getPrimaryServices().
+    console.log('Getting Services...');
+    return server.getPrimaryServices();
+  })
+  .then(services => {
+    console.log('Getting Characteristics...');
+    let queue = Promise.resolve();
+    services.forEach(service => {
+      queue = queue.then(_ => service.getCharacteristics().then(characteristics => {
+        console.log('> Service: ' + service.uuid);
+        characteristics.forEach(characteristic => {
+          name = getSupportedProperties(characteristic)
+          console.log('>> Characteristic: ' + characteristic.uuid + ' ' + name);
+              this.hashUUID[name] = {'serviceUUID':service.uuid, 'characteristicUUID':characteristic.uuid};
+        });
+      }));
+    });
+    return queue;
+  })
+  .catch(error => {
+    console.log('Error : ' + error);
+  });
+}
 
 //--------------------------------------------------
 //setUUID
@@ -47,7 +104,6 @@ BlueJelly.prototype.setUUID = function(name, serviceUUID, characteristicUUID){
 
   this.hashUUID[name] = {'serviceUUID':serviceUUID, 'characteristicUUID':characteristicUUID};
 }
-
 
 //--------------------------------------------------
 //scan

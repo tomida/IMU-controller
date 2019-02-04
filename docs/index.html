@@ -21,7 +21,8 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
     </div>
 
     <div class="contents margin">
-        <button id="connect" class="button">Connect</button>
+        Push 'Get UUID'  before 'start Notify'<br>
+        <button id="getUUID" class="button">Get UUID</button>
         <button id="startNotifications" class="button">Start Notify</button>
         <button id="reset" class="button">Reset</button>
         <button id="start" class="button">Start</button>
@@ -31,16 +32,16 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
         <div id="uuid_name"> </div>
         <div id="data_text"> </div>
         <div id="status"> </div>
-        <select id="parameter">
+        <select id="parameter" class="button">
           <option value="size">size</option>
           <option value="acc_th">acc_th</option>
           <option value="init_period">init_period</option>
         </select>
         <button id="get" class="button">Get</button>
-        <input id='_value' type='number' value='1' size="4">
+        <input id='_value' type='number' class="button" value='1' size="4">
         <button id="set" class="button">Set</button>
         <br>
-        <select id="download option">
+        <select id="download option" class="button">
           <option value="imu">IMU</option>
           <option value="gyr">Gyro</option>
           <option value="flt">Filtered</option>
@@ -72,10 +73,6 @@ window.onload = function () {
   document.getElementById('device_name').innerHTML  = "No Device";
   document.getElementById('uuid_name').innerHTML    = "Not Connected";
   document.getElementById('status').innerHTML       = "ready";
-
-  //UUID settings
-  // ble.setUUID("UUID1", "d68c0001-a21b-11e5-8cb8-0002a5d5c51b", "d68c0002-a21b-11e5-8cb8-0002a5d5c51b");  // Service and Indicate
-  // ble.setUUID("UUID2", "d68c0001-a21b-11e5-8cb8-0002a5d5c51b", "d68c0003-a21b-11e5-8cb8-0002a5d5c51b");  // Service and Write
 }
 
 
@@ -168,8 +165,8 @@ ble.onRead = function (data, uuid){
 //-------------------------------------------------
 //Event listener when buttons are clicked
 //--------------------------------------------------
-document.getElementById('connect').addEventListener('click', function() {
-  onButtonClick();
+document.getElementById('getUUID').addEventListener('click', function(){
+    ble.getUUID();
 });
 
 document.getElementById('startNotifications').addEventListener('click', function() {
@@ -213,59 +210,6 @@ document.getElementById('download').addEventListener('click', function() {
     data = new TextEncoder("utf-8").encode(`download ${option}\n`);
     ble.write('[WRITE]', data);
 });
-
-const onButtonClick = () => {
-  // Validate services UUID entered by user first.
-  let optionalServices = 'generic_access'
-    .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
-    .filter(s => s && BluetoothUUID.getService);
-
-  console.log('Requesting any Bluetooth Device...');
-  navigator.bluetooth.requestDevice({
-   // filters: [...] <- Prefer filters to save energy & show relevant devices.
-      acceptAllDevices: true,
-      optionalServices: optionalServices})
-  .then(device => {
-    console.log('Connecting to GATT Server...');
-    return device.gatt.connect();
-  })
-  .then(server => {
-    // Note that we could also get all services that match a specific UUID by
-    // passing it to getPrimaryServices().
-    console.log('Getting Services...');
-    return server.getPrimaryServices();
-  })
-  .then(services => {
-    console.log('Getting Characteristics...');
-    let queue = Promise.resolve();
-    services.forEach(service => {
-      queue = queue.then(_ => service.getCharacteristics().then(characteristics => {
-        console.log('> Service: ' + service.uuid);
-        characteristics.forEach(characteristic => {
-          console.log('>> Characteristic: ' + characteristic.uuid + ' ' +
-              getSupportedProperties(characteristic));
-              ble.setUUID(getSupportedProperties(characteristic), service.uuid, characteristic.uuid);
-        });
-      }));
-    });
-    return queue;
-  })
-  .catch(error => {
-    console.log('Argh! ' + error);
-  });
-}
-
-/* Utils */
-
-const getSupportedProperties = (characteristic) => {
-  let supportedProperties = [];
-  for (const p in characteristic.properties) {
-    if (characteristic.properties[p] === true) {
-      supportedProperties.push(p.toUpperCase());
-    }
-  }
-  return '[' + supportedProperties.join(', ') + ']';
-}
 
 </script>
 </body>

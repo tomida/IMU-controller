@@ -64,7 +64,7 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
 var ble = new BlueJelly();
 // read data
 var read_data = ''
-
+var uuid_list = []
 //--------------------------------------------------
 //after loading
 //--------------------------------------------------
@@ -92,7 +92,7 @@ ble.onScan = function (deviceName) {
 //--------------------------------------------------
 ble.onConnectGATT = function (uuid) {
   console.log('> connected GATT!');
-
+  uuid_list.push(uuid)
   document.getElementById('uuid_name').innerHTML = uuid;
   document.getElementById('status').innerHTML = "connected GATT!";
 }
@@ -177,7 +177,11 @@ document.getElementById('getUUID').addEventListener('click', function(){
 });
 
 document.getElementById('startNotifications').addEventListener('click', function() {
-    ble.startNotify('[INDICATE]');
+    uuid_list.forEach(uuid => {
+      if (uuid.match(/.*(INDICATE|READ).*/)){
+        ble.startNotify(uuid);
+      }
+    })
     read_data=''
 });
 
@@ -188,19 +192,31 @@ document.getElementById('reset').addEventListener('click', function() {
 //start
 document.getElementById('start').addEventListener('click', function() {
     data = new TextEncoder("utf-8").encode('start\n');
-    ble.write('[WRITE]', data);
+    uuid_list.forEach(uuid => {
+      if (uuid.match(/.*WRITE.*/)){
+        ble.write(uuid, data);
+      }
+    })
 });
 // calc
 document.getElementById('calc').addEventListener('click', function() {
     data = new TextEncoder("utf-8").encode('calc\n');
-    ble.write('[WRITE]', data);
+    uuid_list.forEach(uuid => {
+      if (uuid.match(/.*WRITE.*/)){
+        ble.write(uuid, data);
+      }
+    })
 });
 // get parameter settings
 document.getElementById('get').addEventListener('click', function() {
     option = document.getElementById('parameter').value;
     console.log(`get ${option}\n`)
     data = new TextEncoder("utf-8").encode(`get ${option}\n`);
-    ble.write('[WRITE]', data);
+    uuid_list.forEach(uuid => {
+      if (uuid.match(/.*WRITE.*/)){
+        ble.write(uuid, data);
+      }
+    })
 });
 
 // set parameter
@@ -209,7 +225,11 @@ document.getElementById('set').addEventListener('click', function() {
     _value = document.getElementById('_value').value;
     console.log(`set ${param} ${_value}\n`)
     data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
-    ble.write('[WRITE]', data);
+    uuid_list.forEach(uuid => {
+      if (uuid.match(/.*WRITE.*/)){
+        ble.write(uuid, data);
+      }
+    })
 });
 
 // download
@@ -217,7 +237,11 @@ document.getElementById('download').addEventListener('click', function() {
     option = document.getElementById('download option').value;
     console.log(`download ${option}\n`)
     data = new TextEncoder("utf-8").encode(`download ${option}\n`);
-    ble.write('[WRITE]', data);
+    uuid_list.forEach(uuid => {
+      if (uuid.match(/.*WRITE.*/)){
+        ble.write(uuid, data);
+      }
+    })
 });
 
 </script>

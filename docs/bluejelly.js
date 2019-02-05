@@ -23,6 +23,7 @@ var BlueJelly = function(){
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;
   this.hashUUID ={};
+  this.hashUUID_firstConnected;
   this.hashUUID_lastConnected;
 
   //callBack
@@ -67,6 +68,8 @@ BlueJelly.prototype.getUUID = function(){
       optionalServices: optionalServices})
   .then(device => {
     console.log('Connecting to GATT Server...');
+    this.bluetoothDevice = device;
+    this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
     return device.gatt.connect();
   })
   .then(server => {
@@ -85,7 +88,9 @@ BlueJelly.prototype.getUUID = function(){
           name = getSupportedProperties(characteristic)
           console.log('>> Characteristic: ' + characteristic.uuid + ' ' + name);
               this.hashUUID[name] = {'serviceUUID':service.uuid, 'characteristicUUID':characteristic.uuid};
+              this.connectGATT(name);
         });
+        this.hashUUID_firstConnected = this.hashUUID[name]
       }));
     });
     return queue;
@@ -154,7 +159,8 @@ BlueJelly.prototype.connectGATT = function(uuid) {
   return this.bluetoothDevice.gatt.connect()
   .then(server => {
     console.log('Execute : getPrimaryService');
-    return server.getPrimaryService(this.hashUUID[uuid].serviceUUID);
+    return server.getPrimaryService(
+      this.hashUUID[uuid].serviceUUID);
   })
   .then(service => {
     console.log('Execute : getCharacteristic');

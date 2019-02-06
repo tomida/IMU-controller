@@ -23,7 +23,6 @@ var BlueJelly = function(){
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;
   this.hashUUID ={};
-  this.hashUUID_firstConnected;
   this.hashUUID_lastConnected;
 
   //callBack
@@ -54,13 +53,11 @@ function getSupportedProperties(characteristic) {
 //--------------------------------------------------
 //getUUID
 //--------------------------------------------------
-BlueJelly.prototype.getUUID = function(){
+BlueJelly.prototype.getUUID = function(service){
   console.log('Execute : getUUID');
-  console.log(this.hashUUID);
-  let optionalServices = 'generic_access'
+  let optionalServices = service
     .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
     .filter(s => s && BluetoothUUID.getService);
-
   console.log('Requesting any Bluetooth Device...');
   navigator.bluetooth.requestDevice({
    // filters: [...] <- Prefer filters to save energy & show relevant devices.
@@ -85,12 +82,11 @@ BlueJelly.prototype.getUUID = function(){
       queue = queue.then(_ => service.getCharacteristics().then(characteristics => {
         console.log('> Service: ' + service.uuid);
         characteristics.forEach(characteristic => {
-          name = getSupportedProperties(characteristic)
+          const name = getSupportedProperties(characteristic);
           console.log('>> Characteristic: ' + characteristic.uuid + ' ' + name);
-              this.hashUUID[name] = {'serviceUUID':service.uuid, 'characteristicUUID':characteristic.uuid};
-              this.connectGATT(name);
+          this.setUUID(name, service.uuid, characteristic.uuid);
+          this.connectGATT(name);
         });
-        this.hashUUID_firstConnected = this.hashUUID[name]
       }));
     });
     return queue;
@@ -159,8 +155,7 @@ BlueJelly.prototype.connectGATT = function(uuid) {
   return this.bluetoothDevice.gatt.connect()
   .then(server => {
     console.log('Execute : getPrimaryService');
-    return server.getPrimaryService(
-      this.hashUUID[uuid].serviceUUID);
+    return server.getPrimaryService(this.hashUUID[uuid].serviceUUID);
   })
   .then(service => {
     console.log('Execute : getCharacteristic');
@@ -176,7 +171,6 @@ BlueJelly.prototype.connectGATT = function(uuid) {
       this.onError(error);
     });
 }
-
 
 //--------------------------------------------------
 //dataChanged

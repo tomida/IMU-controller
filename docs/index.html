@@ -21,7 +21,11 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
     </div>
 
     <div class="contents margin">
-        Push 'Get UUID'  before 'start Notify'<br>
+        Push 'Get UUID'  before 'start Notify'
+        <form>
+          <input id="optionalServices" type="text" list="services" size="40" placeholder="generic_access">
+        </form>
+        <br>
         <button id="getUUID" class="button">Get UUID</button>
         <button id="startNotifications" class="button">Start Notify</button>
         <button id="reset" class="button">Reset</button>
@@ -61,12 +65,13 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
 //global variable
 //--------------------------------------------------
 //generate an instance
-var ble = new BlueJelly();
+let ble = new BlueJelly();
 // read data
-var read_data = ''
-var uuid_list = []
-var read_uuid
-var write_uuid
+let read_data = '';
+// characteristics uuid list
+let notify_uuid; // Characteristics UUID for NOTIFY/INDICATE
+let read_uuid; // Characteristics UUID for READ
+let write_uuid; // Characteristics UUID for WRITE
 //--------------------------------------------------
 //after loading
 //--------------------------------------------------
@@ -94,13 +99,15 @@ ble.onScan = function (deviceName) {
 //--------------------------------------------------
 ble.onConnectGATT = function (uuid) {
   console.log('> connected GATT!');
-  uuid_list.push(uuid)
-  write_uuid = uuid_list.find(function(uuid){
-    return uuid.match(/.*WRITE.*/)
-  })
-  read_uuid = uuid_list.find(function(uuid){
-    return uuid.match(/.*(INDICATE|READ).*/)
-  })
+  if(uuid.match(/.*(INDICATE|NOTIFY).*/)){
+    notify_uuid = uuid;
+  }
+  if(uuid.match(/.*READ.*/)){
+    read_uuid = uuid;
+  }
+  if(uuid.match(/.*WRITE.*/)){
+    write_uuid = uuid;
+  }
   document.getElementById('uuid_name').innerHTML = uuid;
   document.getElementById('status').innerHTML = "connected GATT!";
 }
@@ -153,12 +160,12 @@ ble.onWrite = function(uuid){
 //--------------------------------------------------
 ble.onRead = function (data, uuid){
   //decode data from a device
-  decoded_data = (new TextDecoder('utf-8')).decode(data)
+  const decoded_data = (new TextDecoder('utf-8')).decode(data);
   //display the value in console
   console.log(decoded_data);
-  read_data += decoded_data
+  read_data += decoded_data;
   // if(read_data.match("OK") && ((read_data.match(":")||[]).length > 2)){
-  if(read_data.match("OK") && read_data.match(":")){
+  if(read_data.match("OK") && read_data.match(":")){ // todo 末尾でマッチ
     const blob = new Blob([read_data], {type: "text/plain"}); // binary data
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -166,7 +173,7 @@ ble.onRead = function (data, uuid){
     a.download = `${document.getElementById('download option').value}_output.txt`;
     a.click();
     read_data = '';
-    URL.revokeObjectURL(a.href); // オブジェクトURLを開放
+    URL.revokeObjectURL(a.href); // discharge object URL
   }
   else if(read_data.match("OK") || read_data.match("ERROR")){  //display the value in html
     document.getElementById('data_text').innerHTML = read_data.replace("OK", "");
@@ -181,32 +188,34 @@ ble.onRead = function (data, uuid){
 //Event listener when buttons are clicked
 //--------------------------------------------------
 document.getElementById('getUUID').addEventListener('click', function(){
-    ble.getUUID();
+    ble.getUUID(document.getElementById('optionalServices').value);
 });
 
 document.getElementById('startNotifications').addEventListener('click', function() {
-    ble.startNotify(read_uuid);
-    read_data=''
+    ble.startNotify(notify_uuid);
+    read_data = ''
 });
 
 document.getElementById('reset').addEventListener('click', function() {
     ble.reset(); //reset is disconnect & clear
-    read_data=''
+    read_data = ''
 });
 //start
 document.getElementById('start').addEventListener('click', function() {
     const data = new TextEncoder("utf-8").encode('start\n');
+    console.log("start\n");
     ble.write(write_uuid, data);
 });
 // calc
 document.getElementById('calc').addEventListener('click', function() {
     const data = new TextEncoder("utf-8").encode('calc\n');
+    console.log("calculate\n");
     ble.write(write_uuid, data);
 });
 // get parameter settings
 document.getElementById('get').addEventListener('click', function() {
     const option = document.getElementById('parameter').value;
-    console.log(`get ${option}\n`)
+    console.log(`get ${option}\n`);
     const data = new TextEncoder("utf-8").encode(`get ${option}\n`);
     ble.write(write_uuid, data);
 });
@@ -215,7 +224,7 @@ document.getElementById('get').addEventListener('click', function() {
 document.getElementById('set').addEventListener('click', function() {
     const param = document.getElementById('parameter').value;
     const _value = document.getElementById('_value').value;
-    console.log(`set ${param} ${_value}\n`)
+    console.log(`set ${param} ${_value}\n`);
     const data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
     ble.write(write_uuid, data);
 });
@@ -223,7 +232,7 @@ document.getElementById('set').addEventListener('click', function() {
 // download
 document.getElementById('download').addEventListener('click', function() {
     const option = document.getElementById('download option').value;
-    console.log(`download ${option}\n`)
+    console.log(`download ${option}\n`);
     const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
     ble.write(write_uuid, data);
 });

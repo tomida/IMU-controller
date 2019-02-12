@@ -50,6 +50,7 @@ function getSupportedProperties(characteristic) {
   return '[' + supportedProperties.join(', ') + ']';
 }
 
+
 //--------------------------------------------------
 //getUUID
 //--------------------------------------------------
@@ -95,7 +96,41 @@ BlueJelly.prototype.getUUID = function(service){
     console.log('Error : ' + error);
   });
 }
+BlueJelly.prototype.aGetUUID = async function(service){
+  console.log('Execute : getUUID');
+  let optionalServices = service
+  .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
+  .filter(s => s && BluetoothUUID.getService);
+  try {
+    console.log('Requesting any Bluetooth Device...');
+    const device = await navigator.bluetooth.requestDevice({
+       // filters: [...] <- Prefer filters to save energy & show relevant devices.
+       acceptAllDevices: true,
+       optionalServices: optionalServices});
 
+    console.log('Connecting to GATT Server...');
+    const server = await device.gatt.connect();
+
+    // Note that we could also get all services that match a specific UUID by
+    // passing it to getPrimaryServices().
+    console.log('Getting Services...');
+    const services = await server.getPrimaryServices();
+
+    console.log('Getting Characteristics...');
+    for (const service of services) {
+      console.log('> Service: ' + service.uuid);
+      const characteristics = await service.getCharacteristics();
+      characteristics.forEach(async characteristic => {
+        const name = await getSupportedProperties(characteristic);
+        await this.setUUID(name, service.uuid, characteristic.uuid);
+        console.log('>> Characteristic: ' + characteristic.uuid + ' ' + name);
+        this.connectGATT(name);
+      });
+    }
+  } catch(error) {
+    console.log('Error: ' + error);
+  }
+}
 //--------------------------------------------------
 //setUUID
 //--------------------------------------------------
@@ -203,12 +238,14 @@ BlueJelly.prototype.read= function(uuid) {
 
 //--------------------------------------------------
 //write
+// For the sake of stability, scan(uuid) is omitted.
 //--------------------------------------------------
 BlueJelly.prototype.write = function(uuid, array_value) {
-  return (this.scan(uuid))
-  .then( () => {
-    return this.connectGATT(uuid);
-  })
+  // return (this.scan(uuid))
+  // .then( () => {
+  //   return this.connectGATT(uuid);
+  // })
+  return this.connectGATT(uuid)
   .then( () => {
     console.log('Execute : writeValue');
     data = Uint8Array.from(array_value);

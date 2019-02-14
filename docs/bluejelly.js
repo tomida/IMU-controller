@@ -51,52 +51,11 @@ function getSupportedProperties(characteristic) {
 }
 
 
+
 //--------------------------------------------------
 //getUUID
 //--------------------------------------------------
-BlueJelly.prototype.getUUID = function(service){
-  console.log('Execute : getUUID');
-  let optionalServices = service
-    .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
-    .filter(s => s && BluetoothUUID.getService);
-  console.log('Requesting any Bluetooth Device...');
-  navigator.bluetooth.requestDevice({
-   // filters: [...] <- Prefer filters to save energy & show relevant devices.
-      acceptAllDevices: true,
-      optionalServices: optionalServices})
-  .then(device => {
-    console.log('Connecting to GATT Server...');
-    this.bluetoothDevice = device;
-    this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
-    return device.gatt.connect();
-  })
-  .then(server => {
-    // Note that we could also get all services that match a specific UUID by
-    // passing it to getPrimaryServices().
-    console.log('Getting Services...');
-    return server.getPrimaryServices();
-  })
-  .then(services => {
-    console.log('Getting Characteristics...');
-    let queue = Promise.resolve();
-    services.forEach(service => {
-      queue = queue.then(_ => service.getCharacteristics().then(characteristics => {
-        console.log('> Service: ' + service.uuid);
-        characteristics.forEach(characteristic => {
-          const name = getSupportedProperties(characteristic);
-          console.log('>> Characteristic: ' + characteristic.uuid + ' ' + name);
-          this.setUUID(name, service.uuid, characteristic.uuid);
-          this.connectGATT(name);
-        });
-      }));
-    });
-    return queue;
-  })
-  .catch(error => {
-    console.log('Error : ' + error);
-  });
-}
-BlueJelly.prototype.aGetUUID = async function(service){
+BlueJelly.prototype.getUUID = async function(service){
   console.log('Execute : getUUID');
   let optionalServices = service
   .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
@@ -110,6 +69,9 @@ BlueJelly.prototype.aGetUUID = async function(service){
 
     console.log('Connecting to GATT Server...');
     const server = await device.gatt.connect();
+    this.bluetoothDevice = device;
+    this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+    this.onScan(this.bluetoothDevice.name);
 
     // Note that we could also get all services that match a specific UUID by
     // passing it to getPrimaryServices().
@@ -120,17 +82,18 @@ BlueJelly.prototype.aGetUUID = async function(service){
     for (const service of services) {
       console.log('> Service: ' + service.uuid);
       const characteristics = await service.getCharacteristics();
-      characteristics.forEach(async characteristic => {
-        const name = await getSupportedProperties(characteristic);
-        await this.setUUID(name, service.uuid, characteristic.uuid);
+      characteristics.forEach( characteristic => {
+        const name = getSupportedProperties(characteristic);
+        this.setUUID(name, service.uuid, characteristic.uuid);
         console.log('>> Characteristic: ' + characteristic.uuid + ' ' + name);
-        this.connectGATT(name);
+        this.onGetUUID(name);
       });
     }
   } catch(error) {
     console.log('Error: ' + error);
   }
 }
+
 //--------------------------------------------------
 //setUUID
 //--------------------------------------------------
@@ -265,10 +228,11 @@ BlueJelly.prototype.write = function(uuid, array_value) {
 //startNotify
 //--------------------------------------------------
 BlueJelly.prototype.startNotify = function(uuid) {
-  return (this.scan(uuid))
-  .then( () => {
-    return this.connectGATT(uuid);
-  })
+  // return (this.scan(uuid))
+  // .then( () => {
+  //   return this.connectGATT(uuid);
+  // })
+  return this.connectGATT(uuid)
   .then( () => {
     console.log('Execute : startNotifications');
     this.dataCharacteristic.startNotifications()

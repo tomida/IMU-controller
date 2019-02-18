@@ -228,11 +228,10 @@ BlueJelly.prototype.write = function(uuid, array_value) {
 //startNotify
 //--------------------------------------------------
 BlueJelly.prototype.startNotify = function(uuid) {
-  // return (this.scan(uuid))
-  // .then( () => {
-  //   return this.connectGATT(uuid);
-  // })
-  return this.connectGATT(uuid)
+  return (this.scan(uuid))
+  .then( () => {
+    return this.connectGATT(uuid);
+  })
   .then( () => {
     console.log('Execute : startNotifications');
     this.dataCharacteristic.startNotifications()

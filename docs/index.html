@@ -25,6 +25,7 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
     </div>
     <hr>
     <div class="contents margin">
+<<<<<<< HEAD
         <!-- <form>
           <input id="optionalServices" type="text" list="services" size=40 value="d68c0001-a21b-11e5-8cb8-0002a5d5c51b">
           <button>Discover services & characteristics</button>
@@ -33,6 +34,9 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
           <option value="d68c0001-a21b-11e5-8cb8-0002a5d5c51b">d68c0001-a21b-11e5-8cb8-0002a5d5c51b</option>
         </datalist> -->
         <button id="connect" class="button">Connect</button>
+=======
+        <button id="Connect" class="button">Connect</button>
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
         <button id="start" class="button">Start</button>
         <button id="calc" class="button">Calc</button>
         <button id="stop" class="button">Stop</button>
@@ -63,7 +67,11 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
     </div>
     <hr>
     <div class="contents margin">
+<<<<<<< HEAD
         <button id="connect2" class="button">Connect</button>
+=======
+        <button id="Connect2" class="button">Connect</button>
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
         <button id="start2" class="button">Start</button>
         <button id="calc2" class="button">Calc</button>
         <button id="stop2" class="button">Stop</button>
@@ -102,6 +110,7 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
 //global variables
 //--------------------------------------------------
 //generate an instance
+<<<<<<< HEAD
 var ble  = new BlueJelly();
 var ble2 = new BlueJelly();
 
@@ -109,12 +118,27 @@ var ble2 = new BlueJelly();
 var read_data  = "";
 var read_data2 = "";
 
+=======
+var ble = new BlueJelly();
+var ble2 = new BlueJelly();
+
+// read data
+var read_data = '';
+var read_data2 = '';
+
+// characteristic uuid name
+var indicate_name = ""; // Characteristics UUID for NOTIFY/INDICATE
+var write_name = ""; // Characteristics UUID for WRITE
+var indicate_name2 = ""; // Characteristics UUID for NOTIFY/INDICATE
+var write_name2 = ""; // Characteristics UUID for WRITE
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 
 //--------------------------------------------------
 //constants
 //--------------------------------------------------
 
 // service uuid
+<<<<<<< HEAD
 const service_uuid  = "d68c0001-a21b-11e5-8cb8-0002a5d5c51b";
 const service_uuid2 = "d68c0001-a21b-11e5-8cb8-0002a5d5c51b";
 
@@ -128,6 +152,13 @@ const indicate_uuid2 = "d68c0002-a21b-11e5-8cb8-0002a5d5c51b";
 var indicate_name2 = "[INDICATE]"
 const write_uuid2 = "d68c0003-a21b-11e5-8cb8-0002a5d5c51b";
 var write_name2 = "[WRITE]"
+=======
+const service_uuid = "d68c0001-a21b-11e5-8cb8-0002a5d5c51b";
+const service_uuid2 = "d68c0001-a21b-11e5-8cb8-0002a5d5c51b";
+// characteristic uuid
+// const indicate_uuid = "d68c0002-a21b-11e5-8cb8-0002a5d5c51b";
+// const write_uuid = "d68c0003-a21b-11e5-8cb8-0002a5d5c51b";
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 const start_command = new TextEncoder("utf-8").encode('start\n');
 const calc_command = new TextEncoder("utf-8").encode('calc\n');
 const stop_command = new TextEncoder("utf-8").encode('stop\n');
@@ -154,11 +185,19 @@ window.onload = function () {
 //--------------------------------------------------
 ble.onScan = function (deviceName) {
   document.getElementById('device_name').innerHTML = deviceName;
+<<<<<<< HEAD
   document.getElementById('status').innerHTML      = "Found device!";
 }
 ble2.onScan = function (deviceName) {
   document.getElementById('device_name2').innerHTML = deviceName;
   document.getElementById('status2').innerHTML      = "Found device!";
+=======
+  document.getElementById('status').innerHTML = "found device!";
+}
+ble2.onScan = function (deviceName) {
+  document.getElementById('device_name2').innerHTML = deviceName;
+  document.getElementById('status2').innerHTML = "found device!";
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 }
 
 //--------------------------------------------------
@@ -185,6 +224,10 @@ ble2.onGetUUID = function (uuid) {
   }
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 
 //--------------------------------------------------
 //after connectGATT
@@ -230,11 +273,19 @@ ble2.onError = function(error){
 //--------------------------------------------------
 ble.onWrite = function(uuid){
   document.getElementById('uuid_name').innerHTML = uuid;
+<<<<<<< HEAD
   document.getElementById('status').innerHTML = "Written data"
 }
 ble2.onWrite = function(uuid){
   document.getElementById('uuid_name2').innerHTML = uuid;
   document.getElementById('status2').innerHTML = "Written data"
+=======
+  document.getElementById('status').innerHTML = "Written Data"
+}
+ble2.onWrite = function(uuid){
+  document.getElementById('uuid_name2').innerHTML = uuid;
+  document.getElementById('status2').innerHTML = "Written Data"
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 }
 
 //--------------------------------------------------
@@ -256,14 +307,22 @@ ble.onRead = function (data, uuid){
     read_data = '';
     URL.revokeObjectURL(a.href); // discharge object URL
     document.getElementById('data_text').innerHTML = "";
+<<<<<<< HEAD
     document.getElementById('status').innerHTML    = "Read data"
+=======
+    document.getElementById('status').innerHTML = "Read Data"
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
   }
   else if(read_data.match("OK\n") || read_data.match("ERROR\n")){  //display the value in html
     document.getElementById('data_text').innerHTML = read_data;
     read_data = '';
   }else{
     document.getElementById('data_text').innerHTML = "Downloading: " + decoded_data;
+<<<<<<< HEAD
     document.getElementById('status').innerHTML    = "Read data"
+=======
+    document.getElementById('status').innerHTML = "Read Data"
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
   }
   document.getElementById('uuid_name').innerHTML = uuid;
 }
@@ -283,13 +342,18 @@ ble2.onRead = function (data, uuid){
     read_data2 = '';
     URL.revokeObjectURL(a.href); // discharge object URL
     document.getElementById('data_text2').innerHTML = "";
+<<<<<<< HEAD
     document.getElementById('status2').innerHTML    = "Read data"
+=======
+    document.getElementById('status2').innerHTML = "Read Data"
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
   }
   else if(read_data2.match("OK\n") || read_data2.match("ERROR\n")){  //display the value in html
     document.getElementById('data_text2').innerHTML = read_data2;
     read_data2 = '';
   }else{
     document.getElementById('data_text2').innerHTML = "Downloading: " + decoded_data2;
+<<<<<<< HEAD
     document.getElementById('status2').innerHTML    = "Read data"
   }
   document.getElementById('uuid_name2').innerHTML = uuid;
@@ -309,7 +373,29 @@ ble2.onStartNotify = function(uuid){
 
   document.getElementById('uuid_name2').innerHTML = uuid;
   document.getElementById('status2').innerHTML    = "Started Notify";
+=======
+    document.getElementById('status2').innerHTML = "Read Data"
+  }
+  document.getElementById('uuid_name2').innerHTML = uuid;
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 }
+
+//--------------------------------------------------
+//after Start Notify
+//--------------------------------------------------
+ble.onStartNotify = function(uuid){
+  console.log('> Start Notify!');
+
+  document.getElementById('uuid_name').innerHTML = uuid;
+  document.getElementById('status').innerHTML = "Started Notify";
+}
+ble2.onStartNotify = function(uuid){
+  console.log('> Start Notify!');
+
+  document.getElementById('uuid_name2').innerHTML = uuid;
+  document.getElementById('status2').innerHTML = "Started Notify";
+}
+
 
 //-------------------------------------------------
 //Event listener when buttons are clicked
@@ -333,12 +419,17 @@ document.getElementById('calc_all').addEventListener('click', function() {
 //stop all devices
 document.getElementById('stop_all').addEventListener('click', function() {
   console.log("stop all");
+<<<<<<< HEAD
   document.getElementById('data_text').innerHTML  = "Stopped";
+=======
+  document.getElementById('data_text').innerHTML = "Stopped";
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
   document.getElementById('data_text2').innerHTML = "Stopped";
   ble.write(write_name, stop_command);
   ble2.write(write_name, stop_command);
 });
 
+<<<<<<< HEAD
 //
 // unused function?
 //
@@ -378,6 +469,32 @@ document.getElementById('connect2').addEventListener('click', function() {
     read_data2 = "";
   }
   ble2.startNotify(indicate_name2);
+=======
+//connection and indication
+document.getElementById('Connect').addEventListener('click', async function() {
+  if(ble.bluetoothDevice){
+    await ble.reset(); //reset is disconnect & clear
+  }
+  document.getElementById('data_text').innerHTML = "";
+  document.getElementById('device_name').innerHTML  = "No Device";
+  document.getElementById('uuid_name').innerHTML    = "Not Connected";
+  document.getElementById('status').innerHTML       = "Ready";
+  await ble.getUUID(service_uuid);
+  ble.startNotify(indicate_name);
+  read_data = ""
+});
+document.getElementById('Connect2').addEventListener('click', async function() {
+  if(ble2.bluetoothDevice){
+    await ble2.reset(); //reset is disconnect & clear
+  }
+  document.getElementById('data_text2').innerHTML = "";
+  document.getElementById('device_name2').innerHTML  = "No Device";
+  document.getElementById('uuid_name2').innerHTML    = "Not Connected";
+  document.getElementById('status2').innerHTML       = "Ready";
+  await ble2.getUUID(service_uuid2);
+  ble2.startNotify(indicate_name2);
+  read_data2 = ""
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 });
 
 //start
@@ -463,11 +580,17 @@ document.getElementById('download2').addEventListener('click', function() {
 //reset
 document.getElementById('reset').addEventListener('click', function() {
     ble.reset(); //reset is disconnect & clear
+<<<<<<< HEAD
     read_data = "";
 });
 document.getElementById('reset2').addEventListener('click', function() {
     ble2.reset(); //reset is disconnect & clear
     read_data2 = "";
+=======
+});
+document.getElementById('reset2').addEventListener('click', function() {
+    ble2.reset(); //reset is disconnect & clear
+>>>>>>> 476994c28bb648499f99a8726e6fef9d7ffa8c35
 });
 
 </script>

@@ -27,19 +27,6 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
         </datalist>
         <button>Connect</button>
       </form>
-      <!-- <button id="start_all" class="button">Start All</button>
-      <button id="calc_all" class="button">Calc All</button>
-      <button id="stop_all" class="button">Stop All</button>
-      <button id="reset_all" class="button">Reset All</button>
-      <select id="download_option" class="button">
-        <option value="imu">IMU</option>
-        <option value="gyr">Gyro</option>
-        <option value="flt">Filtered</option>
-        <option value="pos">Position</option>
-        <option value="quat">Quaternion</option>
-        <option value="euler">Euler</option>
-      </select>
-      <button id="download_all" class="button">Download all</button> -->
     </div>
     <hr>
     <div class="contents margin" id="target">
@@ -74,51 +61,6 @@ const stop_command  = new TextEncoder("utf-8").encode('stop\n');
 //--------------------------------------------------
 window.onload = () => {
 }
-
-//-------------------------------------------------
-//Event listener when buttons are clicked
-//--------------------------------------------------
-// //start Measuring in all devices
-// document.getElementById('start_all').addEventListener('click', function() {
-//   for (label in ble){
-//     document.getElementById(`${label}_data_text`).innerHTML  = "Measuring";
-//     ble[label].write(write_name, start_command);
-//   }
-//   console.log("start all");
-// });
-// //calculation in all devices
-// document.getElementById('calc_all').addEventListener('click', function() {
-//   for (label in ble){
-//     document.getElementById(`${label}_data_text`).innerHTML  = "Calculating";
-//     ble[label].write(write_name, calc_command);
-//   }
-//   console.log("calculate in all");
-// });
-// //stop all devices
-// document.getElementById('stop_all').addEventListener('click', function() {
-//   for (label in ble){
-//     document.getElementById(`${label}_data_text`).innerHTML  = "Stopped";
-//     ble[label].write(write_name, stop_command);
-//   }
-//   console.log("stop all");
-// });
-// //reset all devices
-// document.getElementById('reset_all').addEventListener('click', function() {
-//   console.log("reset all");
-//   for (label in ble){
-//     document.getElementById(label).remove();
-//     ble[label].reset(); //reset is disconnect & clear
-//   }
-// });
-// download from all devices
-// document.getElementById('download_all').addEventListener('click', function() {
-//   const option = document.getElementById(`download_option`).value;
-//   const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
-//   console.log(`download ${option} from all`);
-//   for (label in ble){
-//     ble[label].write(write_name, data);
-//   }
-// });
 
 //connection and indication
 document.querySelector('form').addEventListener('submit', async function(event) {

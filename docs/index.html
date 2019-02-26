@@ -80,7 +80,6 @@ document.querySelector('form').addEventListener('submit', async function(event) 
   ble[label].setUUID(write_name, service_uuid, write_uuid);
   // start indication
   await ble[label].startNotify(indicate_name);
-
   if(ble[label].bluetoothDevice.gatt.connected){
     // generate HTML elements
     const menu = document.createElement("p");
@@ -123,9 +122,32 @@ document.querySelector('form').addEventListener('submit', async function(event) 
     document.getElementById(`${label}_uuid_name`).innerHTML = "Connected";
     document.getElementById(`${label}_status`).innerHTML    = "Ready";
     //--------------------------------------------------
+    //when disconnected
+    //--------------------------------------------------
+    ble[label].onDisconnect = () => {
+      console.log(`${label} is disconnected.`);
+      document.getElementById(`${label}_name`).innerHTML = "No Device";
+      document.getElementById(`${label}_uuid_name`).innerHTML = "Not Connected";
+      document.getElementById(`${label}_status`).innerHTML = "disconnected";
+    }
+    //--------------------------------------------------
+    //when cleared
+    //--------------------------------------------------
+    ble[label].onClear = () => {
+      console.log(`${label} is cleared.`);
+      document.getElementById(`${label}_status`).innerHTML = "Cleared"
+    }
+    //--------------------------------------------------
+    //after reset
+    //--------------------------------------------------
+    ble[label].onReset = () => {
+      console.log(`${label} is no longer reachable.`);
+    }
+    //--------------------------------------------------
     //stating error
     //--------------------------------------------------
     ble[label].onError = (error) => {
+      console.log(`ERROR: ${error}`);
       document.getElementById(`${label}_status`).innerHTML = `ERROR: ${error}`;
     }
     //--------------------------------------------------
@@ -199,13 +221,16 @@ document.querySelector('form').addEventListener('submit', async function(event) 
     // reset
     document.getElementById(`${label}_reset`).addEventListener('click', function() {
       console.log(`removing ${label}...`);
-      document.getElementById(label).remove();
       ble[label].reset(); //reset is disconnect & clear
       delete ble[label];
+      document.getElementById(label).remove();
       if(Object.keys(ble).length == 0){
         document.getElementById("onload").remove();
       }
     });
+  }else{
+    throw new Error("Failed to connect the device.");
+    return;
   }
   // when the first device is connected
   if(Object.keys(ble).length == 1){
@@ -255,13 +280,13 @@ document.querySelector('form').addEventListener('submit', async function(event) 
     //reset all devices
     document.getElementById('reset_all').addEventListener('click', function() {
       console.log("reset all");
+      document.getElementById('onload').remove();
       for (each_label in ble){
         console.log(`removing ${each_label}...`);
-        document.getElementById(each_label).remove();
         ble[each_label].reset(); //reset is disconnect & clear
-        delete ble[label];
+        document.getElementById(label).remove();
       }
-      document.getElementById('onload').remove();
+      ble = {};
     });
     // download from all devices
     document.getElementById('download_all').addEventListener('click', function() {
@@ -272,6 +297,7 @@ document.querySelector('form').addEventListener('submit', async function(event) 
         ble[each_label].write(write_name, data);
       }
     });
+    console.log("command buttons now available!");
   }
 });
 </script>

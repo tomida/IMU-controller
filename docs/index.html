@@ -19,11 +19,11 @@ Copyright 2019 Yu Tomida. All Rights Reserved.
     </div>
     <div class="contents margin" id="start_menu">
       <form>
-        <input id="device_label" type="text" list="part" size = 10 autocomplete="on"　required>
+        <input id="device_label" type="text" list="part" size = 10 autocomplete="on" placeholder="Label"　required>
         <datalist id="part">
-          <option value="left">Left leg</option>
-          <option value="right">Right leg</option>
-          <option value="waist">Waist</option>
+          <option value="Left">Left leg</option>
+          <option value="Right">Right leg</option>
+          <option value="Waist">Waist</option>
         </datalist>
         <button>Connect</button>
       </form>
@@ -63,241 +63,263 @@ window.onload = () => {
 }
 
 //connection and indication
-document.querySelector('form').addEventListener('submit', async function(event) {
+document.querySelector('form').addEventListener('submit', function(event) {
   event.stopPropagation();
   event.preventDefault();
-  const label = await document.getElementById('device_label').value;
-  if (!label){// no label
+  const label = document.getElementById('device_label').value;
+  if (!label){ // no label is specified
     throw new Error('A device label is not selected');
-  } else if (document.getElementById(`${label}_name`)){ // already exists
+    return;
+  } else if (document.getElementById(`${label}_name`)){ //the label already exists
     throw new Error('the device is already connected');
+    return;
   }
   // generate a ble instance
-  ble[label] = await new BlueJelly();
-  let read_buffer = "";
+  ble[label] = new BlueJelly();
   // set characteristic uuid
   ble[label].setUUID(indicate_name, service_uuid, indicate_uuid);
   ble[label].setUUID(write_name, service_uuid, write_uuid);
   // start indication
-  await ble[label].startNotify(indicate_name);
-  if(ble[label].bluetoothDevice.gatt.connected){
-    // generate HTML elements
-    const menu = document.createElement("p");
-    menu.setAttribute("id", label);
-    const target = document.getElementById('target');
-    //todo bad know-how: create HTML elements without '+ concatenation'
-    menu.innerHTML = '<div id="' + label + '_name" class= "ble_name"> </div>'
-                   + '<div id="' + label + '_uuid_name" class= "ble_uuid"> </div>'
-                   + '<div id="' + label + '_data_text" class= "ble_data"> </div>'
-                   + '<div id="' + label + '_status" class= "ble_status"> </div>'
-                   + '<details>'
-                    + '<button id="' + label + '_start" class="button">Start</button>'
-                   + '<button id="' + label + '_calc" class="button">Calc</button>'
-                   + '<button id="' + label + '_stop" class="button">Stop</button>'
-                   + '<button id="' + label + '_reset" class="button">Reset</button>'
-                   + '<br>'
-                   + '<select id="' + label + '_parameter" class="button">'
-                   +  '<option value="size">size</option>'
-                   +  '<option value="max_size">max_size</option>'
-                   +  '<option value="acc_th">acc_th</option>'
-                   +  '<option value="init_period">init_period</option>'
-                   + '</select>'
-                   + '<button id="' + label + '_get" class="button">Get</button>'
-                   + '<input id="' + label + '_value" type="number" class="button" size="4">'
-                   + '<button id="' + label + '_set" class="button">Set</button>'
-                   + '<br>'
-                   + '<select id="' + label + '_option" class="button">'
-                   + '<option value="imu">IMU</option>'
-                   + '<option value="gyr">Gyro</option>'
-                   + '<option value="flt">Filtered</option>'
-                   + '<option value="pos">Position</option>'
-                   + '<option value="quat">Quaternion</option>'
-                   + '<option value="euler">Euler</option>'
-                   + '</select>'
-                   + '<button id="' + label + '_download" class="button">Download</button>'
-                   + '</details>'
-                   + '<hr>'
-    target.appendChild(menu.cloneNode(true))
-    document.getElementById(`${label}_name`).innerHTML      = label;
-    document.getElementById(`${label}_uuid_name`).innerHTML = "Connected";
-    document.getElementById(`${label}_status`).innerHTML    = "Ready";
-    //--------------------------------------------------
-    //when disconnected
-    //--------------------------------------------------
-    ble[label].onDisconnect = () => {
-      console.log(`${label} is disconnected.`);
-      document.getElementById(`${label}_name`).innerHTML = "No Device";
-      document.getElementById(`${label}_uuid_name`).innerHTML = "Not Connected";
-      document.getElementById(`${label}_status`).innerHTML = "disconnected";
-    }
-    //--------------------------------------------------
-    //when cleared
-    //--------------------------------------------------
-    ble[label].onClear = () => {
-      console.log(`${label} is cleared.`);
-      document.getElementById(`${label}_status`).innerHTML = "Cleared"
-    }
-    //--------------------------------------------------
-    //after reset
-    //--------------------------------------------------
-    ble[label].onReset = () => {
-      console.log(`${label} is no longer reachable.`);
-    }
-    //--------------------------------------------------
-    //stating error
-    //--------------------------------------------------
-    ble[label].onError = (error) => {
-      console.log(`ERROR: ${error}`);
-      document.getElementById(`${label}_status`).innerHTML = `ERROR: ${error}`;
-    }
-    //--------------------------------------------------
-    //after reading
-    //--------------------------------------------------
-    ble[label].onRead = (data, uuid) => {
-      const decoded_data = (new TextDecoder('utf-8')).decode(data);  //decode data from a device
-      console.log(decoded_data);  //display the value in console
-      read_buffer += decoded_data;
-      if((read_buffer.match("\nOK\n") || read_buffer.match("\nERROR\n")) && read_buffer.match(":")){
-        const blob  = new Blob([read_buffer], {type: "text/plain"}); // binary data
-        const a     = document.createElement("a");
-        a.href      = URL.createObjectURL(blob);
-        a.target    = '_blank';
-        a.download  = `${label}_${document.getElementById(`${label}_option`).value}.txt`;
-        a.click();
-        read_buffer = "";
-        URL.revokeObjectURL(a.href); // discharge object URL
-        document.getElementById(`${label}_data_text`).innerHTML = "";
-        document.getElementById(`${label}_status`).innerHTML    = "Read data"
+  return ble[label].startNotify(indicate_name).then( () => {
+    if(ble[label].bluetoothDevice.gatt.connected){
+      let read_buffer = ""; // readData buffer
+      // generate HTML elements
+      const menu = document.createElement("p");
+      menu.setAttribute("id", label);
+      const target = document.getElementById('target');
+      //todo bad know-how: create HTML elements without '+ concatenation'
+      menu.innerHTML = '<span id="' + label + '_name" class= "ble_name"></span>: '
+                     + '<span id="' + label + '_data_text" class= "ble_data"> </span>'
+                     + '<div id="' + label + '_status" class= "ble_status"> </div>'
+                      + '<button id="' + label + '_start" class="button">Start</button>'
+                     + '<button id="' + label + '_calc" class="button">Calc</button>'
+                     + '<button id="' + label + '_stop" class="button">Stop</button>'
+                     + '<button id="' + label + '_reset" class="button">Reset</button>'
+                     + '<br>'
+                     + '<details>'
+                     + '<select id="' + label + '_parameter" class="button">'
+                     +  '<option value="size">size</option>'
+                     +  '<option value="max_size">max_size</option>'
+                     +  '<option value="acc_th">acc_th</option>'
+                     +  '<option value="init_period">init_period</option>'
+                     + '</select>'
+                     + '<button id="' + label + '_get" class="button">Get</button>'
+                     + '<input id="' + label + '_value" type="number" class="button" size="4">'
+                     + '<button id="' + label + '_set" class="button">Set</button>'
+                     + '<br>'
+                     + '<select id="' + label + '_option" class="button">'
+                     + '<option value="imu">IMU</option>'
+                     + '<option value="gyr">Gyro</option>'
+                     + '<option value="flt">Filtered</option>'
+                     + '<option value="pos">Position</option>'
+                     + '<option value="quat">Quaternion</option>'
+                     + '<option value="euler">Euler</option>'
+                     + '</select>'
+                     + '<button id="' + label + '_download" class="button">Download</button>'
+                     + '</details>'
+                     + '<hr>'
+      target.appendChild(menu.cloneNode(true))
+      document.getElementById(`${label}_name`).innerHTML      = label;
+      document.getElementById(`${label}_status`).innerHTML    = "Ready";
+      //--------------------------------------------------
+      //when disconnected
+      //--------------------------------------------------
+      ble[label].onDisconnect = () => {
+        console.log(`${label} is disconnected.`);
+        document.getElementById(`${label}_name`).innerHTML = "No Device";
+        document.getElementById(`${label}_status`).innerHTML = "disconnected";
       }
-      else if(read_buffer.match("OK\n") || read_buffer.match("ERROR\n")){  //display the value in html
-        document.getElementById(`${label}_data_text`).innerHTML = read_buffer;
-        read_buffer = "";
-      }else{
-        document.getElementById(`${label}_data_text`).innerHTML = `Downloading: ${decoded_data}`;
-        document.getElementById(`${label}_status`).innerHTML    = "Read data"
+      //--------------------------------------------------
+      //stating error
+      //--------------------------------------------------
+      ble[label].onError = (error) => {
+        console.log(`ERROR: ${error}`);
+        document.getElementById(`${label}_status`).innerHTML = `ERROR: ${error}`;
       }
-      document.getElementById(`${label}_uuid_name`).innerHTML = uuid;
-    }
-    //start
-    document.getElementById(`${label}_start`).addEventListener('click', function() {
-      console.log(`start ${label}`);
-      document.getElementById(`${label}_data_text`).innerHTML = "Measuring";
-      ble[label].write(write_name, start_command);
-    });
-    //calc
-    document.getElementById(`${label}_calc`).addEventListener('click', function() {
-      console.log(`calculate in ${label}`);
-      document.getElementById(`${label}_data_text`).innerHTML = "Calculating";
-      ble[label].write(write_name, calc_command);
-    });
-    //stop
-    document.getElementById(`${label}_stop`).addEventListener('click', function() {
-      console.log(`stop ${label}`);
-      document.getElementById(`${label}_data_text`).innerHTML = "Stopped";
-      ble[label].write(write_name, stop_command);
-    });
-    // get parameter
-    document.getElementById(`${label}_get`).addEventListener('click', function() {
-      const param = document.getElementById(`${label}_parameter`).value;
-      console.log(`get ${param} from ${label}`);
-      const data = new TextEncoder("utf-8").encode(`get ${param}\n`);
-      ble[label].write(write_name, data);
-    });
-    // set parameter
-    document.getElementById(`${label}_set`).addEventListener('click', function() {
-      const param = document.getElementById(`${label}_parameter`).value;
-      const _value = document.getElementById(`${label}_value`).value;
-      console.log(`set ${param} ${_value} for ${label}\n`);
-      const data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
-      ble[label].write(write_name, data);
-    });
-    // download data
-    document.getElementById(`${label}_download`).addEventListener('click', function() {
-      const option = document.getElementById(`${label}_option`).value;
-      console.log(`download ${option} from ${label}`);
-      const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
-      ble[label].write(write_name, data);
-    });
-    // reset
-    document.getElementById(`${label}_reset`).addEventListener('click', function() {
-      console.log(`removing ${label}...`);
-      ble[label].reset(); //reset is disconnect & clear
-      delete ble[label];
-      document.getElementById(label).remove();
-      if(Object.keys(ble).length == 0){
-        document.getElementById("onload").remove();
+      //--------------------------------------------------
+      //after reading
+      //--------------------------------------------------
+      ble[label].onRead = (data, uuid) => {
+        const decoded_data = (new TextDecoder('utf-8')).decode(data);  //decode data from a device
+        console.log(decoded_data);  //display the value in console
+        read_buffer += decoded_data;
+        if((read_buffer.match("OK") || read_buffer.match("ERROR")) && read_buffer.match(":")){
+          const blob  = new Blob([read_buffer], {type: "text/plain"}); // binary data
+          const a     = document.createElement("a");
+          a.href      = URL.createObjectURL(blob);
+          a.target    = '_blank';
+          a.download  = `${label}_${document.getElementById(`${label}_option`).value}.txt`;
+          a.click();
+          read_buffer = "";
+          URL.revokeObjectURL(a.href); // discharge object URL
+          document.getElementById(`${label}_data_text`).innerHTML = "";
+          document.getElementById(`${label}_status`).innerHTML    = "Read data"
+        }
+        else if(read_buffer.match("OK\n") || read_buffer.match("ERROR\n")){  //display the value in html
+          document.getElementById(`${label}_data_text`).innerHTML = read_buffer;
+          read_buffer = "";
+          document.getElementById(`${label}_status`).innerHTML    = "Ready"
+        }else{
+          document.getElementById(`${label}_data_text`).innerHTML = `Downloading: ${decoded_data}`;
+          document.getElementById(`${label}_status`).innerHTML    = "Read data"
+        }
       }
-    });
-  }else{
-    throw new Error("Failed to connect the device.");
-    return;
-  }
-  // when the first device is connected
-  if(Object.keys(ble).length == 1){
-    //generate a menu
-    console.log("creating command buttons...");
-    const menu = document.createElement("p");
-    const target = document.getElementById("start_menu");
-    menu.setAttribute("id", 'onload');
-    menu.innerHTML = '<button id="start_all" class="button">Start All</button>'
-                   + '<button id="calc_all" class="button">Calc All</button>'
-                   + '<button id="stop_all" class="button">Stop All</button>'
-                   + '<button id="reset_all" class="button">Reset All</button>'
-                   + '<select id="download_option" class="button">'
-                   + '<option value="imu">IMU</option>'
-                   + '<option value="gyr">Gyro</option>'
-                   + '<option value="flt">Filtered</option>'
-                   + '<option value="pos">Position</option>'
-                   + '<option value="quat">Quaternion</option>'
-                   + '<option value="euler">Euler</option>'
-                   + '</select>'
-                   + '<button id="download_all" class="button">Download all</button>'
-    target.appendChild(menu)
-    //start Measuring in all devices
-    document.getElementById('start_all').addEventListener('click', function() {
-      for (each_label in ble){
-        document.getElementById(`${each_label}_data_text`).innerHTML  = "Measuring";
-        ble[each_label].write(write_name, start_command);
-      }
-      console.log("start all");
-    });
-    //calculation in all devices
-    document.getElementById('calc_all').addEventListener('click', function() {
-      for (each_label in ble){
-        document.getElementById(`${each_label}_data_text`).innerHTML  = "Calculating";
-        ble[each_label].write(write_name, calc_command);
-      }
-      console.log("calculate in all");
-    });
-    //stop all devices
-    document.getElementById('stop_all').addEventListener('click', function() {
-      for (each_label in ble){
-        document.getElementById(`${each_label}_data_text`).innerHTML  = "Stopped";
-        ble[each_label].write(write_name, stop_command);
-      }
-      console.log("stop all");
-    });
-    //reset all devices
-    document.getElementById('reset_all').addEventListener('click', function() {
-      console.log("reset all");
-      document.getElementById('onload').remove();
-      for (each_label in ble){
-        console.log(`removing ${each_label}...`);
-        ble[each_label].reset(); //reset is disconnect & clear
+      //start
+      document.getElementById(`${label}_start`).addEventListener('click', function() {
+        console.log(`start ${label}`);
+        document.getElementById(`${label}_data_text`).innerHTML = "Measuring";
+        ble[label].write(write_name, start_command);
+      });
+      //calc
+      document.getElementById(`${label}_calc`).addEventListener('click', function() {
+        console.log(`calculate in ${label}`);
+        document.getElementById(`${label}_data_text`).innerHTML = "Calculating";
+        ble[label].write(write_name, calc_command);
+      });
+      //stop
+      document.getElementById(`${label}_stop`).addEventListener('click', function() {
+        console.log(`stop ${label}`);
+        document.getElementById(`${label}_data_text`).innerHTML = "Stopped";
+        ble[label].write(write_name, stop_command);
+      });
+      // get parameter
+      document.getElementById(`${label}_get`).addEventListener('click', function() {
+        const param = document.getElementById(`${label}_parameter`).value;
+        console.log(`get ${param} from ${label}`);
+        const data = new TextEncoder("utf-8").encode(`get ${param}\n`);
+        ble[label].write(write_name, data);
+      });
+      // set parameter
+      document.getElementById(`${label}_set`).addEventListener('click', function() {
+        const param = document.getElementById(`${label}_parameter`).value;
+        const _value = document.getElementById(`${label}_value`).value;
+        console.log(`set ${param} ${_value} for ${label}\n`);
+        const data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
+        ble[label].write(write_name, data);
+      });
+      // download data
+      document.getElementById(`${label}_download`).addEventListener('click', function() {
+        const option = document.getElementById(`${label}_option`).value;
+        console.log(`download ${option} from ${label}`);
+        const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
+        ble[label].write(write_name, data);
+      });
+      // reset
+      document.getElementById(`${label}_reset`).addEventListener('click', function() {
+        console.log(`removing ${label}...`);
+        ble[label].disconnect();
+        delete ble[label];
         document.getElementById(label).remove();
-      }
-      ble = {};
-    });
-    // download from all devices
-    document.getElementById('download_all').addEventListener('click', function() {
-      const option = document.getElementById(`download_option`).value;
-      const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
-      console.log(`download ${option} from all`);
-      for (each_label in ble){
-        ble[each_label].write(write_name, data);
-      }
-    });
-    console.log("command buttons now available!");
-  }
+        if(Object.keys(ble).length == 0){
+          document.getElementById("onload").remove();
+        }
+      });
+    }else{
+      throw new Error("Failed to connect the device.");
+      return;
+    }
+    // when the first device is connected
+    if(Object.keys(ble).length == 1){
+      //generate a menu
+      console.log("creating command buttons...");
+      const menu = document.createElement("p");
+      const target = document.getElementById("start_menu");
+      menu.setAttribute("id", 'onload');
+      menu.innerHTML = '<button id="start_all" class="button">Start All</button>'
+                     + '<button id="calc_all" class="button">Calc All</button>'
+                     + '<button id="stop_all" class="button">Stop All</button>'
+                     + '<button id="reset_all" class="button">Reset All</button>'
+                     + '<br>'
+                     + '<select id="parameter" class="button">'
+                     +  '<option value="size">size</option>'
+                     +  '<option value="max_size">max_size</option>'
+                     +  '<option value="acc_th">acc_th</option>'
+                     +  '<option value="init_period">init_period</option>'
+                     + '</select>'
+                     + '<button id="get" class="button">Get</button>'
+                     + '<input id="_value" type="number" class="button" size="4">'
+                     + '<button id="set" class="button">Set</button>'
+                     + '<br>'
+                     + '<select id="option" class="button">'
+                     + '<option value="imu">IMU</option>'
+                     + '<option value="gyr">Gyro</option>'
+                     + '<option value="flt">Filtered</option>'
+                     + '<option value="pos">Position</option>'
+                     + '<option value="quat">Quaternion</option>'
+                     + '<option value="euler">Euler</option>'
+                     + '</select>'
+                     + '<button id="download" class="button">Download</button>'
+      target.appendChild(menu)
+      //start Measuring in all devices
+      document.getElementById('start_all').addEventListener('click', function() {
+        for (each_label in ble){
+          document.getElementById(`${each_label}_data_text`).innerHTML  = "Measuring";
+          ble[each_label].write(write_name, start_command);
+        }
+        console.log("start all");
+      });
+      //calculation in all devices
+      document.getElementById('calc_all').addEventListener('click', function() {
+        for (each_label in ble){
+          document.getElementById(`${each_label}_data_text`).innerHTML  = "Calculating";
+          ble[each_label].write(write_name, calc_command);
+        }
+        console.log("calculate in all");
+      });
+      //stop all devices
+      document.getElementById('stop_all').addEventListener('click', function() {
+        for (each_label in ble){
+          document.getElementById(`${each_label}_data_text`).innerHTML  = "Stopped";
+          ble[each_label].write(write_name, stop_command);
+        }
+        console.log("stop all");
+      });
+      //reset all devices
+      document.getElementById('reset_all').addEventListener('click', function() {
+        console.log("reset all");
+        document.getElementById('onload').remove();
+        for (each_label in ble){
+          console.log(`removing ${each_label}...`);
+          ble[each_label].disconnect();
+          document.getElementById(label).remove();
+        }
+        ble = {}; //clear all devices
+      });
+      // get parameter from all devices
+      document.getElementById(`get`).addEventListener('click', function() {
+        const param = document.getElementById("parameter").value;
+        console.log(`get ${param} from all`);
+        const data = new TextEncoder("utf-8").encode(`get ${param}\n`);
+        for (each_label in ble){
+          document.getElementById(`${label}_parameter`).value = param;
+          ble[each_label].write(write_name, data);
+        }
+      });
+      // set parameter for all devices
+      document.getElementById(`set`).addEventListener('click', function() {
+        const param = document.getElementById("parameter").value;
+        const _value = document.getElementById("_value").value;
+        console.log(`set ${param} ${_value} for all\n`);
+        const data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
+        for (each_label in ble){
+          ble[each_label].write(write_name, data);
+        }
+      });
+      // download data from all devices
+      document.getElementById('download').addEventListener('click', function() {
+        const option = document.getElementById('option').value;
+        const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
+        console.log(`download ${option} from all`);
+        for (each_label in ble){
+          document.getElementById(`${label}_option`).value = option;
+          ble[each_label].write(write_name, data);
+        }
+      });
+      console.log("command buttons are now available!");
+    }
+  })
+  .catch(error => {
+    console.log(`Error: ${error}`);
+  });
 });
 </script>

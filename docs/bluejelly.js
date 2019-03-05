@@ -42,40 +42,48 @@ class BlueJelly  {
   //--------------------------------------------------
   //getUUID
   //--------------------------------------------------
-  async getUUID (service) {
-    console.log('Execute : getUUID');
-    let optionalServices = service
+  getUUID (service) {
+    console.log('Execute: getUUID');
+    const optionalServices = service
     .split(/, ?/).map(s => s.startsWith('0x') ? parseInt(s) : s)
     .filter(s => s && BluetoothUUID.getService);
-    try {
-      console.log('Requesting any Bluetooth Device...');
-      const device = await navigator.bluetooth.requestDevice({
-         // filters: [...] <- Prefer filters to save energy & show relevant devices.
-         acceptAllDevices: true,
-         optionalServices: optionalServices});
-      console.log('Connecting to GATT Server...');
-      const server = await device.gatt.connect();
+
+    console.log('Requesting any Bluetooth Device...');
+    navigator.bluetooth.requestDevice({
+     // filters: [...] <- Prefer filters to save energy & show relevant devices.
+        acceptAllDevices: true,
+        optionalServices: optionalServices})
+    .then(device => {
       this.bluetoothDevice = device;
+      console.log('Connecting to GATT Server...');
+      return device.gatt.connect();
+    })
+    .then(server => {
       this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
       this.onScan(this.bluetoothDevice.name);
       // Note that we could also get all services that match a specific UUID by
       // passing it to getPrimaryServices().
       console.log('Getting Services...');
-      const services = await server.getPrimaryServices();
+      return server.getPrimaryServices();
+    })
+    .then(services => {
       console.log('Getting Characteristics...');
-      for (const service of services) {
-        console.log(`> Service: ${service.uuid}`);
-        const characteristics = await service.getCharacteristics();
-        characteristics.forEach( characteristic => {
-          const name = getSupportedProperties(characteristic);
-          this.setUUID(name, service.uuid, characteristic.uuid);
-          console.log(`>> Characteristic: ${characteristic.uuid} ${name}`);
-          this.onGetUUID(name);
-        });
-      }
-    } catch(error) {
+      let queue = Promise.resolve();
+      services.forEach(service => {
+        queue = queue.then(_ => service.getCharacteristics().then(characteristics => {
+          console.log(`> Service: ${service.uuid}`);
+          characteristics.forEach(characteristic => {
+            let supportedProperties = getSupportedProperties(characteristic);
+            console.log(`>> Characteristic: ${characteristic.uuid} ${supportedProperties}`);
+            this.hashUUID[supportedProperties] = {'serviceUUID':service.uuid, 'characteristicUUID':characteristic.uuid};
+            this.onGetUUID(supportedProperties);
+          });
+        }));
+      });
+      return queue;
+    }).catch(error => {
       console.log(`Error: ${error}`);
-    }
+    });
   }
   //--------------------------------------------------
   //setUUID
@@ -195,25 +203,6 @@ class BlueJelly  {
       this.onError(error);
     });
   }
-  // For the sake of stability, scan(uuid) is omitted.
-  write (uuid, array_value) {
-    return (this.scan(uuid))
-    .then( () => {
-      return this.connectGATT(uuid);
-    })
-    .then( () => {
-      console.log('Execute: writeValue');
-      const data = Uint8Array.from(array_value);
-      return this.dataCharacteristic.writeValue(data);
-    })
-    .then( () => {
-      this.onWrite(uuid);
-    })
-    .catch(error => {
-      console.log(`Error: ${error}`);
-      this.onError(error);
-    });
-  }
   //--------------------------------------------------
   //startNotify
   //--------------------------------------------------
@@ -231,24 +220,6 @@ class BlueJelly  {
     })
     .catch(error => {
       console.log(`Error: ${error}`);
-      this.onError(error);
-    });
-  }
-  //--------------------------------------------------
-  //getNotify
-  // For the sake of stability, scan(uuid) is omitted.
-  //--------------------------------------------------
-  getNotify (uuid) {
-    return this.connectGATT(uuid)
-    .then( () => {
-      console.log('Execute : startNotifications');
-      this.dataCharacteristic.startNotifications()
-    })
-    .then( () => {
-      this.onStartNotify(uuid);
-    })
-    .catch(error => {
-      console.log('Error: ' + error);
       this.onError(error);
     });
   }

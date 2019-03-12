@@ -83,6 +83,33 @@ const main_buttons  = Array.from(document.getElementsByClassName("button"));
 const sr_buttons    = Array.from(document.getElementsByClassName("sr_button"));
 
 //--------------------------------------------------
+// functions
+//--------------------------------------------------
+const disable_main = () =>{
+  console.log("main buttons are disabled");
+  main_buttons.forEach(button =>{
+    button.disabled = true;
+  })
+}
+const enable_main = () =>{
+  console.log("main buttons are enabled");
+  main_buttons.forEach(button =>{
+    button.disabled = false;
+  })
+}
+const disable_sr = () =>{
+  console.log("stop/reset buttons are disabled");
+  sr_buttons.forEach(button =>{
+    button.disabled = true;
+  })
+}
+const enable_sr = () =>{
+  console.log("stop/reset buttons are enabled");
+  sr_buttons.forEach(button =>{
+    button.disabled = false;
+  })
+}
+//--------------------------------------------------
 //after loading
 //--------------------------------------------------
 window.onload = () => {
@@ -97,6 +124,7 @@ document.getElementById('start_all').addEventListener('click', () => {
     document.getElementById(`${label}_status`).innerHTML = "Measuring";
     ble[label].write(write_name, start_command);
   }
+  disable_main();
   console.log("start all");
 });
 //calculation in all devices
@@ -106,6 +134,7 @@ document.getElementById('calc_all').addEventListener('click', () => {
     document.getElementById(`${label}_status`).innerHTML = "Calculating";
     ble[label].write(write_name, calc_command);
   }
+  disable_main();
   console.log("calculate in all");
 });
 //stop all devices
@@ -115,6 +144,8 @@ document.getElementById('stop_all').addEventListener('click', () => {
     document.getElementById(`${label}_status`).innerHTML = "Ready";
     ble[label].write(write_name, stop_command);
   }
+  //enabling buttons
+  enable_main();
   console.log("stop all");
 });
 //reset all devices
@@ -126,13 +157,9 @@ document.getElementById('reset_all').addEventListener('click', () => {
     document.getElementById(label).remove();
   }
   ble = {}; //clear all devices
-  //disabling buttons
-  main_buttons.forEach(button =>{
-    button.disabled = true;
-  });
-  sr_buttons.forEach(button =>{
-    button.disabled = true;
-  });
+  //disabling all buttons except Connect
+  disable_main();
+  disable_sr();
 });
 // get parameter from all devices
 document.getElementById(`get`).addEventListener('click', () => {
@@ -143,6 +170,7 @@ document.getElementById(`get`).addEventListener('click', () => {
     document.getElementById(`${label}_parameter`).value = param;
     ble[label].write(write_name, data);
   }
+  disable_main();
 });
 // set parameter for all devices
 document.getElementById(`set`).addEventListener('click', () => {
@@ -154,6 +182,7 @@ document.getElementById(`set`).addEventListener('click', () => {
     document.getElementById(`${label}_parameter`).value = param;
     ble[label].write(write_name, data);
   }
+  disable_main();
 });
 // download data from all devices
 document.getElementById('download').addEventListener('click', () => {
@@ -164,6 +193,7 @@ document.getElementById('download').addEventListener('click', () => {
     document.getElementById(`${label}_option`).value = option;
     ble[label].write(write_name, data);
   }
+  disable_main();
 });
 //connection and indication
 document.querySelector('form').addEventListener('submit', (event) => {
@@ -181,16 +211,12 @@ document.querySelector('form').addEventListener('submit', (event) => {
   }
   // generate a ble instance
   ble[label] = new BlueJelly();
-  // generate HTML elements and define functions after getting UUID
+  // after getting UUID: starting indication
   ble[label].onGetUUID = (uuid) =>{
     // if the first device is connected
     if(Object.keys(ble).length == 1){
-      main_buttons.forEach(button =>{
-        button.disabled = false;
-      });
-      sr_buttons.forEach(button =>{
-        button.disabled = false;
-      });
+      enable_main();
+      enable_sr();
     }
     if(uuid.match(/.*WRITE.*/)){
       write_name = uuid;
@@ -200,176 +226,181 @@ document.querySelector('form').addEventListener('submit', (event) => {
       indicate_name = uuid;
       console.log(`indicate name: ${uuid}`);
       ble[label].startNotify(indicate_name);
-      let read_buffer = ""; // readData buffer
-      // generate HTML elements
-      const menu = document.createElement("p");
-      menu.setAttribute("id", label);
-      const target = document.getElementById('target');
-      //todo bad know-how: create an interactive interface
-      menu.innerHTML = '<div class="text">Label: <span id="' + label + '_name" class= "text"></span></div>'
-                     + '<div class="text">Received data: <span id="' + label + '_data_text" class= "text"></span></div>'
-                     + '<div class="status">Status: <span id="' + label + '_status" class= "status"></span></div>'
-                     + '<button id="' + label + '_start" class="button" >Start</button>'
-                     + '<button id="' + label + '_calc" class="button" >Calc</button>'
-                     + '<button id="' + label + '_stop" class="sr_button">Stop</button>'
-                     + '<button id="' + label + '_reset" class="sr_button">Reset</button>'
-                     + '<br>'
-                     + '<details>'
-                     + '<select id="' + label + '_parameter" class="button" disabled>'
-                     +  '<option value="size">size</option>'
-                     +  '<option value="max_size">max_size</option>'
-                     +  '<option value="acc_th">acc_th</option>'
-                     +  '<option value="init_period">init_period</option>'
-                     + '</select>'
-                     + '<button id="' + label + '_get" class="button" >Get</button>'
-                     + '<input id="' + label + '_value" type="number" class="button" size="4" >'
-                     + '<button id="' + label + '_set" class="button" >Set</button>'
-                     + '<br>'
-                     + '<select id="' + label + '_option" class="button" >'
-                     + '<option value="imu">IMU</option>'
-                     + '<option value="gyr">Gyro</option>'
-                     + '<option value="flt">Filtered</option>'
-                     + '<option value="pos">Position</option>'
-                     + '<option value="quat">Quaternion</option>'
-                     + '<option value="euler">Euler</option>'
-                     + '</select>'
-                     + '<button id="' + label + '_download" class="button" >Download</button>'
-                     + '</details>'
-                     + '<hr>'
-      target.appendChild(menu.cloneNode(true))
-      const buttons = Array.from(target.getElementsByClassName("button"));
-      document.getElementById(`${label}_name`).innerHTML      = label;
-      document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
-      document.getElementById(`${label}_status`).innerHTML    = "Ready";
-      //--------------------------------------------------
-      //when disconnected
-      //--------------------------------------------------
-      ble[label].onDisconnect = () => {
-        console.log(`${label} is disconnected.`);
-        document.getElementById(`${label}_name`).innerHTML      = "No Device";
-        document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
-        document.getElementById(`${label}_status`).innerHTML    = "Disconnected";
-      }
-      //--------------------------------------------------
-      //stating error
-      //--------------------------------------------------
-      ble[label].onError = (error) => {
-        console.log(`ERROR: ${error}`);
-        document.getElementById(`${label}_status`).innerHTML = `ERROR: ${error}`;
-      }
-      //--------------------------------------------------
-      //after writing
-      //--------------------------------------------------
-      ble[label].onWrite = (uuid) => {
-        main_buttons.forEach(button => {
-          button.disabled = true;
-        });
-        buttons.forEach(button => {
-          button.disabled = true;
-        });
-      }
-      //--------------------------------------------------
-      //after reading
-      //--------------------------------------------------
-      ble[label].onRead = (data, uuid) => {
-        const decoded_data = (new TextDecoder('utf-8')).decode(data);  //decode data from a device
-        console.log(decoded_data);  //display the value in console
-        read_buffer += decoded_data;
-        if((read_buffer.match("OK\n") || read_buffer.match("ERROR\n")) && read_buffer.match(":")){
-          const blob  = new Blob([read_buffer], {type: "text/plain"}); // binary data
-          const a     = document.createElement("a");
-          a.href      = URL.createObjectURL(blob);
-          a.target    = '_blank';
-          a.download  = `${label}_${document.getElementById(`${label}_option`).value}.txt`;
-          a.click();
-          buttons.forEach(button =>{
-            button.disabled = false;
-          });
-          main_buttons.forEach(button =>{
-            button.disabled = false;
-          });
-          read_buffer = "";
-          URL.revokeObjectURL(a.href); // discharge object URL
-          document.getElementById(`${label}_data_text`).innerHTML = "Downloaded";
-          document.getElementById(`${label}_status`).innerHTML    = "Ready"
-        }
-        else if(read_buffer.match("OK\n") || read_buffer.match("ERROR\n")){  //display the value in html
-          buttons.forEach(button =>{
-            button.disabled = false;
-          });
-          main_buttons.forEach(button =>{
-            button.disabled = false;
-          });
-          document.getElementById(`${label}_data_text`).innerHTML = read_buffer;
-          document.getElementById(`${label}_status`).innerHTML    = "Ready"
-          read_buffer = "";
-        }else{ // downloading...
-          document.getElementById(`${label}_data_text`).innerHTML = decoded_data;
-          document.getElementById(`${label}_status`).innerHTML    = "Reading"
-        }
-      }
-      //start
-      document.getElementById(`${label}_start`).addEventListener('click', () => {
-        console.log(`start ${label}`);
-        document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
-        document.getElementById(`${label}_status`).innerHTML = "Measuring";
-        ble[label].write(write_name, start_command);
-      });
-      //calc
-      document.getElementById(`${label}_calc`).addEventListener('click', () => {
-        console.log(`calculate in ${label}`);
-        document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
-        document.getElementById(`${label}_status`).innerHTML = "Calculating";
-        ble[label].write(write_name, calc_command);
-      });
-      //stop
-      document.getElementById(`${label}_stop`).addEventListener('click', () => {
-        console.log(`stop ${label}`);
-        document.getElementById(`${label}_data_text`).innerHTML = "Stopped";
-        document.getElementById(`${label}_status`).innerHTML = "Ready";
-        ble[label].write(write_name, stop_command);
-        buttons.forEach(button =>{
-          button.disabled = false;
-        });
-      });
-      // get parameter
-      document.getElementById(`${label}_get`).addEventListener('click', () => {
-        const param = document.getElementById(`${label}_parameter`).value;
-        console.log(`get ${param} from ${label}`);
-        const data = new TextEncoder("utf-8").encode(`get ${param}\n`);
-        ble[label].write(write_name, data);
-      });
-      // set parameter
-      document.getElementById(`${label}_set`).addEventListener('click', () => {
-        const param = document.getElementById(`${label}_parameter`).value;
-        const _value = document.getElementById(`${label}_value`).value;
-        console.log(`set ${param} ${_value} for ${label}\n`);
-        const data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
-        ble[label].write(write_name, data);
-      });
-      // download data
-      document.getElementById(`${label}_download`).addEventListener('click', () => {
-        const option = document.getElementById(`${label}_option`).value;
-        console.log(`download ${option} from ${label}`);
-        const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
-        ble[label].write(write_name, data);
-      });
-      // reset
-      document.getElementById(`${label}_reset`).addEventListener('click', () => {
-        console.log(`removing ${label}...`);
-        ble[label].disconnect();
-        delete ble[label];
-        document.getElementById(label).remove();
-        if(Object.keys(ble).length == 0){ // if no device is connected
-          main_buttons.forEach(button =>{
-            button.disabled = true;
-          });
-          sr_buttons.forEach(button =>{
-            button.disabled = true;
-          });
-        }
+    }
+  }
+  // after starting indication:
+  // generate HTML elements and define functions
+  ble[label].onStartNotify = (_) => {
+    let read_buffer = ""; // readData buffer
+    // generate HTML elements
+    const menu = document.createElement("p");
+    menu.setAttribute("id", label);
+    const target = document.getElementById('target');
+    //todo: create a fancy interface
+    menu.innerHTML = '<div class="text">Label: <span id="' + label + '_name" class= "text"></span></div>'
+                   + '<div class="text">Received data: <span id="' + label + '_data_text" class= "text"></span></div>'
+                   + '<div class="status">Status: <span id="' + label + '_status" class= "status"></span></div>'
+                   + '<button id="' + label + '_start" class="button" >Start</button>'
+                   + '<button id="' + label + '_calc" class="button" >Calc</button>'
+                   + '<button id="' + label + '_stop" class="sr_button">Stop</button>'
+                   + '<button id="' + label + '_reset" class="sr_button">Reset</button>'
+                   + '<br>'
+                   + '<details>'
+                   + '<select id="' + label + '_parameter" class="button" disabled>'
+                   +  '<option value="size">size</option>'
+                   +  '<option value="max_size">max_size</option>'
+                   +  '<option value="acc_th">acc_th</option>'
+                   +  '<option value="init_period">init_period</option>'
+                   + '</select>'
+                   + '<button id="' + label + '_get" class="button" >Get</button>'
+                   + '<input id="' + label + '_value" type="number" class="button" size="4" >'
+                   + '<button id="' + label + '_set" class="button" >Set</button>'
+                   + '<br>'
+                   + '<select id="' + label + '_option" class="button" >'
+                   + '<option value="imu">IMU</option>'
+                   + '<option value="gyr">Gyro</option>'
+                   + '<option value="flt">Filtered</option>'
+                   + '<option value="pos">Position</option>'
+                   + '<option value="quat">Quaternion</option>'
+                   + '<option value="euler">Euler</option>'
+                   + '</select>'
+                   + '<button id="' + label + '_download" class="button" >Download</button>'
+                   + '</details>'
+                   + '<hr>'
+    //
+    const buttons = Array.from(menu.getElementsByClassName("button"));
+    target.appendChild(menu);
+    // functions for enabling/disabling buttons
+    const disable_buttons = () =>{
+      console.log(`${label}'s buttons are disabled`);
+      buttons.forEach(button => {
+        button.disabled = true;
       });
     }
+    const enable_buttons = () =>{
+      console.log(`${label}'s buttons are enabled`);
+      buttons.forEach(button => {
+        button.disabled = false;
+      });
+    }
+    // initial state
+    document.getElementById(`${label}_name`).innerHTML      = label;
+    document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
+    document.getElementById(`${label}_status`).innerHTML    = "Ready";
+    //--------------------------------------------------
+    //when disconnected
+    //--------------------------------------------------
+    ble[label].onDisconnect = () => {
+      console.log(`${label} is disconnected.`);
+      disable_buttons();
+      document.getElementById(`${label}_stop`).disabled       = true;
+      document.getElementById(`${label}_name`).innerHTML      = "No Device";
+      document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
+      document.getElementById(`${label}_status`).innerHTML    = "Disconnected";
+    }
+    //--------------------------------------------------
+    //stating error
+    //--------------------------------------------------
+    ble[label].onError = (error) => {
+      enable_buttons();
+      console.log(`ERROR: ${error}`);
+      document.getElementById(`${label}_status`).innerHTML = `ERROR: ${error}`;
+    }
+    //--------------------------------------------------
+    //after writing
+    //--------------------------------------------------
+    ble[label].onWrite = (_) => {
+      disable_buttons();
+    }
+    //--------------------------------------------------
+    //after reading
+    //--------------------------------------------------
+    ble[label].onRead = (data, _) => {
+      const decoded_data = (new TextDecoder('utf-8')).decode(data);  //decode data from a device
+      console.log(decoded_data);  //display the value in console
+      read_buffer += decoded_data;
+      if((read_buffer.match("OK\n") || read_buffer.match("ERROR\n")) && read_buffer.match(":")){
+        const blob  = new Blob([read_buffer], {type: "text/plain"}); // binary data
+        const a     = document.createElement("a");
+        a.href      = URL.createObjectURL(blob);
+        a.target    = '_blank';
+        a.download  = `${label}_${document.getElementById(`${label}_option`).value}.txt`;
+        a.click();
+        // enabling buttons
+        enable_buttons();
+        enable_main();
+        read_buffer = "";
+        URL.revokeObjectURL(a.href); // discharge object URL
+        document.getElementById(`${label}_data_text`).innerHTML = "Downloaded";
+        document.getElementById(`${label}_status`).innerHTML    = "Ready"
+      }
+      else if(read_buffer.match("OK\n") || read_buffer.match("ERROR\n")){  //display the value in html
+        // enabling buttons
+        enable_buttons();
+        enable_main();
+        document.getElementById(`${label}_data_text`).innerHTML = read_buffer;
+        document.getElementById(`${label}_status`).innerHTML    = "Ready"
+        read_buffer = "";
+      }else{ // downloading...
+        document.getElementById(`${label}_data_text`).innerHTML = decoded_data;
+        document.getElementById(`${label}_status`).innerHTML    = "Reading"
+      }
+    }
+    //start
+    document.getElementById(`${label}_start`).addEventListener('click', () => {
+      console.log(`start ${label}`);
+      document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
+      document.getElementById(`${label}_status`).innerHTML = "Measuring";
+      ble[label].write(write_name, start_command);
+    });
+    //calc
+    document.getElementById(`${label}_calc`).addEventListener('click', () => {
+      console.log(`calculate in ${label}`);
+      document.getElementById(`${label}_data_text`).innerHTML = "Nothing";
+      document.getElementById(`${label}_status`).innerHTML = "Calculating";
+      ble[label].write(write_name, calc_command);
+    });
+    //stop
+    document.getElementById(`${label}_stop`).addEventListener('click', () => {
+      console.log(`stop ${label}`);
+      document.getElementById(`${label}_data_text`).innerHTML = "Stopped";
+      document.getElementById(`${label}_status`).innerHTML = "Ready";
+      ble[label].write(write_name, stop_command);
+      enable_buttons();
+    });
+    // get parameter
+    document.getElementById(`${label}_get`).addEventListener('click', () => {
+      const param = document.getElementById(`${label}_parameter`).value;
+      console.log(`get ${param} from ${label}`);
+      const data = new TextEncoder("utf-8").encode(`get ${param}\n`);
+      ble[label].write(write_name, data);
+    });
+    // set parameter
+    document.getElementById(`${label}_set`).addEventListener('click', () => {
+      const param = document.getElementById(`${label}_parameter`).value;
+      const _value = document.getElementById(`${label}_value`).value;
+      console.log(`set ${param} ${_value} for ${label}\n`);
+      const data = new TextEncoder("utf-8").encode(`set ${param} ${_value}\n`);
+      ble[label].write(write_name, data);
+    });
+    // download data
+    document.getElementById(`${label}_download`).addEventListener('click', () => {
+      const option = document.getElementById(`${label}_option`).value;
+      console.log(`download ${option} from ${label}`);
+      const data = new TextEncoder("utf-8").encode(`download ${option}\n`);
+      ble[label].write(write_name, data);
+    });
+    // reset
+    document.getElementById(`${label}_reset`).addEventListener('click', () => {
+      console.log(`removing ${label}...`);
+      ble[label].disconnect();
+      delete ble[label];
+      document.getElementById(label).remove();
+      if(Object.keys(ble).length == 0){ // if no device is connected
+        disable_main();
+        disable_sr();
+      }
+    });
   }
   ble[label].getUUID(service_uuid);
 });

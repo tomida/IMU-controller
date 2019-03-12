@@ -3,3 +3,6 @@ The browser interface for Kawaii 9D-BLE which works on Google Chrome; it support
 
 ## Requirements
 - Bluetooth Low Energy (Bluetooth 4.0 or higher)
+
+# Installation
+No need to install. Visit [here](https://tomida.github.io/IMU-controller/).
